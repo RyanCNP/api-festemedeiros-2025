@@ -1,0 +1,107 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+
+  # -------------------------------------------
+  # Validação da mensagem de commit
+  # -------------------------------------------
+  validate-commit:
+    name: Validar commit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Validar mensagem do commit
+        run: |
+          MSG="$(git log -1 --pretty=%s)"
+          echo "Mensagem: $MSG"
+
+          if ! echo "$MSG" | grep -Eq "^(feat|fix|chore|refactor|docs|test):"; then
+            echo "Commit inválido."
+            exit 1
+          fi
+
+  # -------------------------------------------
+  # Pipeline
+  # -------------------------------------------
+  pipeline:
+    name: Pipeline principal
+    runs-on: ubuntu-latest
+    needs: validate-commit
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configurar Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Rodar linter
+        run: npm run lint --if-present
+
+      - name: Rodar testes
+        run: npm test --if-present
+
+      - name: Build
+        run: npm run build --if-present
+
+  # -------------------------------------------
+  # Enviar e-mail se falhar
+  # -------------------------------------------
+  notify_failure:
+    name: Enviar e-mail de falha
+    needs: pipeline
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Lê o template e substitui variáveis dinamicamente
+      - name: Gerar HTML final
+        id: html
+        run: |
+          TEMPLATE_FILE=".github/template.html"
+
+          BRANCH="${GITHUB_REF##*/}"
+          DATE="$(date '+%d/%m/%Y %H:%M:%S')"
+          COMMIT="$(git log -1 --pretty=%H)"
+          LOG_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          BODY=$(sed \
+            -e "s/{{branch}}/$BRANCH/g" \
+            -e "s/{{data}}/$DATE/g" \
+            -e "s/{{commit}}/$COMMIT/g" \
+            -e "s|{{url_logs}}|$LOG_URL|g" \
+            "$TEMPLATE_FILE")
+
+          # Escapa caracteres especiais e envia para output
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # Envia o e-mail usando o HTML gerado
+      - name: Enviar e-mail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "❌ Falha no Pipeline - ${{ github.ref }}"
+          to: ${{ secrets.MAIL_TO }}
+          from: "CI Pipeline <${{ secrets.MAIL_USERNAME }}>"
+          secure: true
+          html_body: ${{ steps.html.outputs.body }}
