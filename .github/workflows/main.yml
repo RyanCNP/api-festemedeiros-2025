@@ -19,16 +19,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      # --- Validar mensagem de commit ---
+      # --- Validar mensagem do commit ---
       - name: Validar mensagem do commit
         run: |
-          MSG="$(git log -1 --pretty=%B)"
-          echo "Mensagem do commit: $MSG"
+          MSG="$(git log -1 --pretty=%s)"
 
-          if ! echo "$MSG" | grep -Eq "^(feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?: .{1,}$"; then
-            echo "❌ A mensagem de commit não segue as boas práticas (Conventional Commits)."
+          echo "Mensagem detectada: $MSG"
+
+          if [[ ! "$MSG" =~ ^(feat|feat!|chore|fix|refactor|docs)(\(.+\))?:|^Merge|^Revert ]]; then
+            echo "❌ Mensagem de commit inválida!"
+            echo "Use um dos formatos: feat:, feat!:, chore:, fix:, refactor:, docs:"
             exit 1
-          fi
+            fi
+
+            echo "✔ Mensagem válida."
 
       # --- Criar tag inicial se não existir ---
       - name: Criar tag inicial v0.0.0 se não existir
