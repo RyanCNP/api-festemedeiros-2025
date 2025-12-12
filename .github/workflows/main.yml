@@ -66,6 +66,30 @@ jobs:
           git push origin "$NEW_TAG"
 
           echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+      
+      # --- Atualizar versão no package.json ---
+      - name: Atualizar versão no package.json
+        run: |
+          NEW_TAG="${{ steps.version.outputs.tag }}"
+          NEW_VERSION="${NEW_TAG#v}"
+
+          echo "Atualizando versão do package.json para $NEW_VERSION..."
+
+          # Atualiza a versão usando jq
+          jq ".version = \"$NEW_VERSION\"" package.json > package.tmp.json
+          mv package.tmp.json package.json
+
+          # Verifica se houve mudança
+          if ! git diff --quiet package.json; then
+            git config --global user.email "actions@github.com"
+            git config --global user.name "GitHub Actions"
+
+            git add package.json
+            git commit -m "chore: update package.json version to $NEW_VERSION"
+            git push origin HEAD:main
+          else
+            echo "Nenhuma alteração necessária no package.json."
+          fi
 
       # --- Instalar dependências ---
       - name: Install dependencies
