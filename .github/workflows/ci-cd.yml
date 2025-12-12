@@ -2,8 +2,7 @@ name: Release Main
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, develop]
 
 jobs:
   pipeline:
