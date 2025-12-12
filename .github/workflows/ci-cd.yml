@@ -188,6 +188,6 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "🚨 Falha no Pipeline - ${{ github.ref_name }}"
-          to: "${{ secrets.TEAM_EMAILS }}"
+          to: "${{ secrets.TEAM_EMAIL }}"
           from: "CI/CD <no-reply@apifestmedeiros2025.com>"
           html_body: ${{ steps.template.outputs.html }}
