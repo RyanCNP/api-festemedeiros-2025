@@ -1,6 +1,6 @@
 {
   "name": "api-festmedeiros-2025",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "API REST simples para cadastro, visualização, atualização e exclusão de usuários.",
   "homepage": "https://github.com/RyanCNP/api-festemedeiros-2025#readme",
   "bugs": {
