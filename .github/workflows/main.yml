@@ -1,0 +1,121 @@
+name: Pipeline Principal
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # Necessário para criar e enviar tags
+
+    steps:
+      # --- Checkout do repositório ---
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # --- Validar mensagem do commit ---
+      - name: Validar mensagem do commit
+        run: |
+          MSG="$(git log -1 --pretty=%s)"
+
+          echo "Mensagem detectada: $MSG"
+
+          if [[ ! "$MSG" =~ ^(feat|feat!|chore|fix|refactor|docs)(\(.+\))?:|^Merge|^Revert ]]; then
+            echo "❌ Mensagem de commit inválida!"
+            echo "Use um dos formatos: feat:, feat!:, chore:, fix:, refactor:, docs:"
+            exit 1
+            fi
+
+            echo "✔ Mensagem válida."
+
+      # --- Criar tag inicial se não existir ---
+      - name: Criar tag inicial v0.0.0 se não existir
+        run: |
+          if [ -z "$(git tag -l 'v0.0.0')" ]; then
+            echo "Tag v0.0.0 não existe. Criando..."
+            git tag v0.0.0
+            git push origin v0.0.0
+          else
+            echo "Tag v0.0.0 já existe."
+          fi
+
+      # --- Calcular e criar nova tag ---
+      - name: Criar nova tag baseada nos commits
+        id: version
+        run: |
+          LAST_TAG=$(git tag --list 'v*' --sort=-v:refname | head -n1)
+          echo "Última tag encontrada: $LAST_TAG"
+
+          CURRENT_VERSION="${LAST_TAG#v}"
+
+          # Incremento simples: aumentar PATCH automaticamente
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
+
+          NEW_TAG="v$NEW_VERSION"
+          echo "Nova tag será: $NEW_TAG"
+
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
+
+          echo "tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      # --- Instalar dependências ---
+      - name: Install dependencies
+        run: npm install
+  # -------------------------------------------
+  # Enviar e-mail se falhar
+  # -------------------------------------------
+  notify_failure:
+    name: Enviar e-mail de falha
+    needs: pipeline
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      # Lê o template e substitui variáveis dinamicamente
+      - name: Gerar HTML final
+        id: html
+        run: |
+          TEMPLATE_FILE=".github/template.html"
+
+          BRANCH="${GITHUB_REF##*/}"
+          DATE="$(date '+%d/%m/%Y %H:%M:%S')"
+          COMMIT="$(git log -1 --pretty=%H)"
+          LOG_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          BODY=$(sed \
+            -e "s/{{branch}}/$BRANCH/g" \
+            -e "s/{{data}}/$DATE/g" \
+            -e "s/{{commit}}/$COMMIT/g" \
+            -e "s|{{url_logs}}|$LOG_URL|g" \
+            "$TEMPLATE_FILE")
+
+          # Escapa caracteres especiais e envia para output
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # Envia o e-mail usando o HTML gerado
+      - name: Enviar e-mail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "❌ Falha no Pipeline - ${{ github.ref }}"
+          to: ${{ secrets.TEAM_EMAIL }}
+          from: "CI Pipeline API FestMedeiros 2025"
+          secure: true
+          html_body: ${{ steps.html.outputs.body }}
