@@ -101,7 +101,7 @@ jobs:
           username: ${{ secrets.MAIL_USERNAME }}
           password: ${{ secrets.MAIL_PASSWORD }}
           subject: "❌ Falha no Pipeline - ${{ github.ref }}"
-          to: ${{ secrets.MAIL_TO }}
-          from: "CI Pipeline <${{ secrets.MAIL_USERNAME }}>"
+          to: ${{ secrets.TEAM_EMAIL }}
+          from: "CI Pipeline API FestMedeiros 2025"
           secure: true
           html_body: ${{ steps.html.outputs.body }}
