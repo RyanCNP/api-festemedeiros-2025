@@ -2,7 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const sequelize = require('./config/database');
 const userRoutes = require('./routes/user.routes');
-const setupSwagger = require('./swagger');
+const setupSwagger = require('../swagger');
 
 dotenv.config();
 
