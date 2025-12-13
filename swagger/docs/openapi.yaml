@@ -1,0 +1,132 @@
+openapi: 3.0.0
+
+info:
+  title: API de Usuários
+  description: |
+    API REST para gerenciamento de usuários.
+    Implementa operações CRUD seguindo boas práticas REST.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Ambiente de Desenvolvimento
+
+tags:
+  - name: Usuários
+    description: Operações relacionadas aos usuários
+
+paths:
+  /users:
+    get:
+      tags:
+        - Usuários
+      summary: Listar usuários
+      description: Retorna todos os usuários cadastrados
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+    post:
+      tags:
+        - Usuários
+      summary: Criar usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+      responses:
+        '201':
+          description: Usuário criado com sucesso
+
+  /users/{id}:
+    get:
+      tags:
+        - Usuários
+      summary: Buscar usuário por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Usuário encontrado
+        '404':
+          description: Usuário não encontrado
+
+    put:
+      tags:
+        - Usuários
+      summary: Atualizar usuário
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Usuário atualizado
+
+    delete:
+      tags:
+        - Usuários
+      summary: Remover usuário
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Usuário removido com sucesso
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: João da Silva
+        email:
+          type: string
+          example: joao@email.com
+
+    UserCreate:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string

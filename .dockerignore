@@ -1,0 +1,51 @@
+# ----------------------------------------
+# Node / NPM
+# ----------------------------------------
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Logs
+*.log
+logs/
+debug.log
+
+# Environment Variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Dist / Build
+dist/
+build/
+
+# Coverage
+coverage/
+
+# Cache
+.cache/
+.tmp/
+.eslintcache
+.parcel-cache/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
+
+# Sequelize auto-generated
+sequelize.log
+
+# Swagger JSON (if generated automatically)
+swagger-output.json
+
+# Temporary files
+*.tmp
+*.temp
